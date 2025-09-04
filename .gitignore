@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# But don't ignore the Shared folder and its contents
+!Shared/
+!Shared/**
+
+# Don't ignore this .gitignore file
+!.gitignore
