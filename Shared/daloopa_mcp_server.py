@@ -12,30 +12,73 @@ from fastmcp import FastMCP
 mcp = FastMCP(
     name="Daloopa Financial Data MCP",
     instructions="""
-        Professional financial data server using Daloopa's API for investment analysis.
-        
+        Model Context Protocol (MCP) for retrieving financial data from Daloopa's API. 
+        Designed for professional investment analysts seeking accurate financial fundamentals.
+
         CAPABILITIES:
-        1. Search for companies by ticker symbol or company name
-        2. Discover available financial metrics for specific companies  
-        3. Retrieve detailed financial data across time periods
+        1. Discover companies by ticker symbol or company name
+        2. Find available financial metrics for specific companies
+        3. Retrieve detailed financial data for specified time periods
 
-        WORKFLOW:
-        1. Company Discovery: Use discover_companies() with ticker or company name
-        2. Series Discovery: Use discover_company_series() to find available metrics
-        3. Data Retrieval: Use get_company_fundamentals() for specific financial data
+        COMPREHENSIVE WORKFLOW GUIDELINES:
 
-        SEARCH BEST PRACTICES:
-        - For tickers: Use exact symbol (e.g., "AAPL", "MSFT")
-        - For names: Use core name only, omit legal designations
-          * Good: "Apple", "Microsoft" 
-          * Avoid: "Apple Inc.", "Microsoft Corporation"
+        1. Company Search Strategy:
+           - First, search using the exact ticker symbol (e.g., AAPL, MSFT)
+           - If no results found, search using the core company name
+           - When searching by name, ALWAYS omit legal entity designations (Inc., Ltd., Corp., GmbH, S.A., etc.)
+           - Use only the distinctive part of the company name (e.g., "Apple" not "Apple Inc.")
+           - For best results with name searches, use the shortest unique identifier (e.g., "Microsoft" not "Microsoft Corporation")
+           - Use "latest_quarter" field to determine the most recent quarter available for the company
 
-        DATA ANALYSIS:
-        - Present data in standard financial table format
-        - Time periods as columns, metrics as rows
-        - Provide YoY/QoQ growth context when relevant
-        - Highlight significant trends and anomalies
+        2. Series Selection:
+           - EXTRACT SPECIFIC KEYWORDS from the user's prompt (e.g., if they ask about "revenue growth" or "profit margins")
+           - EXTRACT ALL NECESSARY SERIES before calling get_company_fundamentals tool
+           - Use these extracted keywords to search for relevant financial metrics
+           - If the user doesn't specify any particular metrics, search for common financial statement categories:
+             * Income Statement items (revenue, net income, EPS, etc.)
+             * Balance Sheet items (assets, liabilities, equity, etc.)
+             * Cash Flow items (operating cash flow, free cash flow, etc.)
         
+        3. Datapoints Retrieval:
+           - Call this tool after fetching all necessary series_ids
+           - Only call it more times if data for different periods is needed or if there are more than 50 series
+           - After identifying the series_ids, fetch the actual financial data for the specified periods
+           - Ensure to include all relevant financial figures with proper formatting
+           - Provide context for the data (e.g., YoY growth, industry benchmarks)
+
+        DATA INTERPRETATION BEST PRACTICES:
+        - Always provide context for financial figures (YoY growth, industry benchmarks)
+        - Highlight significant trends or anomalies in the data
+        - Consider seasonal factors when analyzing quarterly results
+        - Provide concise, insightful analysis rather than just raw numbers
+        - Use standard financial analysis table format: 
+            - Horizontal axis = time periods
+            - Vertical axis = financial metrics/series
+
+        MANDATORY TABLE FORMAT:
+        ALWAYS use standard financial analysis table format:
+        - Horizontal axis (columns) = time periods (Q1 2023, Q2 2023, etc.)
+        - Vertical axis (rows) = financial metrics/series (Revenue, Net Income, etc.)
+        NEVER put time periods as rows or metrics as columns.
+        
+        Example correct format:
+        | Metric | Q1 2023 | Q2 2023 | Q3 2023 |
+        |--------|---------|---------|---------|
+        | Revenue | $X.X billion | $X.X billion | $X.X billion |
+        | Net Income | $X.X million | $X.X million | $X.X million |
+
+        CRITICAL GUIDANCE RULES:
+        Before comparing Guidance vs Actual:
+        1. FIRST: Create quarter mapping table showing guidance quarter → results quarter (+1)
+        2. SECOND: Verify each comparison follows the +1 quarter offset rule
+        3. THIRD: Proceed with analysis only after confirming correct matching
+            RULES: 
+                - Companies provide guidance for the NEXT quarter, not the current quarter.
+                - Guidance from Quarter N applies to Quarter N+1 results
+                - Example: 2024Q1 earnings call guidance = 2024Q2 expected results
+                - NEVER compare same-quarter guidance to same-quarter actual
+                - Always offset by +1 quarter when matching guidance to actual
+
         Always add "Data sourced from Daloopa" at the end of responses.
     """
 )
@@ -75,7 +118,7 @@ def discover_companies(keyword: str) -> Union[List[Dict[str, Any]], Dict[str, An
             - ticker (str): The stock ticker symbol
             - model_updated_at (str): When the model was last updated
             - earliest_quarter (str): First period with available data
-            - latest_quarter (str): Latest period with available data  
+            - latest_quarter (str): Latest period with available data (use to determine most recent data availability)
             - companyidentifier_set (List[Dict]): Company identifiers (ISIN, CIK, etc.)
         On error - dictionary containing:
             - error (str): Error message
@@ -115,15 +158,25 @@ def discover_company_series(company_id: int, keywords: List[str]) -> Union[List[
     Retrieve a list of all financial series available for a specific company.
     
     This tool fetches all financial series for a given company_id, filtering by keywords.
-    The series include various financial metrics and their respective IDs.
+    The series include various financial metrics and their respective IDs needed for data retrieval.
+    
+    Keyword Extraction Methodology:
+    - EXTRACT SPECIFIC KEYWORDS from the user's request (e.g., "revenue growth", "profit margins", "cash flow")
+    - Use extracted keywords to identify relevant financial metrics
+    - If user doesn't specify metrics, search for comprehensive financial statement categories:
+      * Income Statement: revenue, net income, earnings per share, operating income, gross profit, EBITDA
+      * Balance Sheet: total assets, total liabilities, shareholders equity, cash and cash equivalents, debt
+      * Cash Flow Statement: operating cash flow, free cash flow, capital expenditures, dividends
+      * Financial Ratios: ROE, ROA, debt-to-equity, current ratio, profit margins
+    - Use broader category terms if specific metrics aren't found
     
     Args:
         company_id (int): The unique identifier for the company in Daloopa's system
-        keywords (List[str]): List of keywords to filter the series by name
+        keywords (List[str]): List of keywords to filter the series by name (extracted from user query)
         
     Returns:
         Union[List[Dict[str, Any]], Dict[str, Any]]: On success - list of financial series, each containing:
-            - id (int): The unique identifier for the series
+            - id (int): The unique identifier for the series (required for get_company_fundamentals)
             - full_series_name (str): Full hierarchical context (e.g., "Income Statement | Revenue")
         On error - dictionary containing:
             - error (str): Error message
@@ -169,12 +222,14 @@ def get_company_fundamentals(company_id: int, periods: List[str], series_ids: Li
     Retrieve financial fundamentals for a specific company across specified periods.
     
     This tool fetches detailed financial data for a given company across requested time periods,
-    optionally filtered by specific series IDs.
+    optionally filtered by specific series IDs. The data includes metrics from Income Statement,
+    Balance Sheet, Cash Flow Statement, and various financial ratios.
     
     Args:
         company_id (int): The unique identifier for the company in Daloopa's system
         periods (List[str]): List of periods in YYYYQQ format (e.g., ["2023Q1", "2023Q2"])
-        series_ids (List[int]): List of series IDs to retrieve specific metrics
+                            For annual data, use FY (e.g., "2022FY" for full year 2022)
+        series_ids (List[int]): List of specific financial metric IDs to retrieve (from discover_company_series)
         
     Returns:
         Union[Dict[str, Any], Dict[str, Any]]: On success - paginated API response containing:
@@ -182,7 +237,7 @@ def get_company_fundamentals(company_id: int, periods: List[str], series_ids: Li
             - next (str): URL to next page or null
             - previous (str): URL to previous page or null
             - results (List[Dict]): List of financial datapoints, each containing:
-                - id (int): Unique datapoint identifier (fundamental_id for citations)
+                - id (int): Unique datapoint identifier (fundamental_id)
                 - label (str): Short description of the datapoint
                 - category (str): Financial statement section
                 - value_raw (float): Raw financial value
@@ -197,6 +252,46 @@ def get_company_fundamentals(company_id: int, periods: List[str], series_ids: Li
             - company_id (int): The company ID that caused the error
             - periods (List[str]): The periods that caused the error
             - series_ids (List[int]): The series IDs that caused the error
+            
+    Usage Guidelines:
+    1. Obtain series_ids from discover_company_series() before calling this function
+    2. Always present financial values with proper formatting and context
+    3. Analysis Approaches:
+       - For sequential analysis, request consecutive periods (e.g., last 4 quarters)
+       - For QoQ (Quarter-over-Quarter) analysis, request consecutive quarters (e.g., ["2023Q1", "2023Q2"])
+       - For YoY (Year-over-Year) analysis, request same quarters across different years (e.g., ["2022Q2", "2023Q2"])
+       - For TTM (Trailing Twelve Months), aggregate the last 4 quarters of data
+    
+    MANDATORY TABLE FORMAT:
+    ALWAYS use standard financial analysis table format:
+        - Horizontal axis (columns) = time periods (Q1 2023, Q2 2023, etc.)
+        - Vertical axis (rows) = financial metrics/series (Revenue, Net Income, etc.)
+    NEVER put time periods as rows or metrics as columns.
+        
+    Example correct format:
+    | Metric | Q1 2023 | Q2 2023 | Q3 2023 |
+    |--------|---------|---------|---------|
+    | Revenue | $X.X billion | $X.X billion | $X.X billion |
+    | Net Income | $X.X million | $X.X million | $X.X million |
+
+    CRITICAL GUIDANCE RULES:
+    Before comparing Guidance vs Actual:
+    1. FIRST: Create quarter mapping table showing guidance quarter → results quarter (+1)
+    2. SECOND: Verify each comparison follows the +1 quarter offset rule
+    3. THIRD: Proceed with analysis only after confirming correct matching
+        RULES: 
+            - Companies provide guidance for the NEXT quarter, not the current quarter.
+            - Guidance from Quarter N applies to Quarter N+1 results
+            - Example: 2024Q1 earnings call guidance = 2024Q2 expected results
+            - NEVER compare same-quarter guidance to same-quarter actual
+            - Always offset by +1 quarter when matching guidance to actual
+    
+    Data Analysis Best Practices:
+    - Always provide context for financial figures (YoY growth, industry benchmarks)
+    - Highlight significant trends or anomalies in the data
+    - Consider seasonal factors when analyzing quarterly results
+    - Provide concise, insightful analysis rather than just raw numbers
+    - Include relevant financial ratios and performance metrics
     """
     try:
         headers = {
