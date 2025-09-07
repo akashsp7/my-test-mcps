@@ -97,7 +97,7 @@ def discover_companies(keyword: str) -> Union[List[Dict[str, Any]], Dict[str, An
     
     This tool searches the Daloopa database for companies matching the provided keyword,
     which can be either a ticker symbol or company name. The search results include
-    the ticker, full company name, and company ID needed for subsequent data retrieval.
+    the company ID, ticker, full company name, and other identifiers needed for subsequent data retrieval.
     
     Search Strategy:
     1. For ticker search: Use the exact ticker symbol (e.g., "AAPL", "MSFT")
@@ -114,12 +114,17 @@ def discover_companies(keyword: str) -> Union[List[Dict[str, Any]], Dict[str, An
     
     Returns:
         Union[List[Dict[str, Any]], Dict[str, Any]]: On success - list of companies, each containing:
-            - name (str): The full company name
-            - ticker (str): The stock ticker symbol
-            - model_updated_at (str): When the model was last updated
-            - earliest_quarter (str): First period with available data
-            - latest_quarter (str): Latest period with available data (use to determine most recent data availability)
-            - companyidentifier_set (List[Dict]): Company identifiers (ISIN, CIK, etc.)
+            - id (int): The unique company identifier (REQUIRED for subsequent API calls)
+            - name (str | None): The full company name
+            - ticker (str | None): The stock ticker symbol
+            - industry_ (str | None): Company industry classification
+            - sector_ (str | None): Company sector classification
+            - model_updated_at (str): When the model was last updated (date-time)
+            - earliest_quarter (str | None): First period with available data
+            - latest_quarter (str | None): Latest period with available data (use to determine most recent data availability)
+            - companyidentifier_set (List[Dict]): Company identifiers, each containing:
+                - identifier_type (str): Type (CIK, ISIN, CUSIP, SEDOL, FIGI, etc.)
+                - identifier_value (str | None): The identifier value
         On error - dictionary containing:
             - error (str): Error message
             - keyword (str): The search term that caused the error
@@ -153,11 +158,11 @@ def discover_companies(keyword: str) -> Union[List[Dict[str, Any]], Dict[str, An
         return {"error": f"Error searching companies: {str(e)}", "keyword": keyword}
 
 @mcp.tool
-def discover_company_series(company_id: int, keywords: List[str]) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+def discover_company_series(company_id: int, keywords: List[str] = None) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Retrieve a list of all financial series available for a specific company.
     
-    This tool fetches all financial series for a given company_id, filtering by keywords.
+    This tool fetches all financial series for a given company_id, optionally filtering by keywords.
     The series include various financial metrics and their respective IDs needed for data retrieval.
     
     Keyword Extraction Methodology:
@@ -171,17 +176,17 @@ def discover_company_series(company_id: int, keywords: List[str]) -> Union[List[
     - Use broader category terms if specific metrics aren't found
     
     Args:
-        company_id (int): The unique identifier for the company in Daloopa's system
-        keywords (List[str]): List of keywords to filter the series by name (extracted from user query)
+        company_id (int): The unique identifier for the company in Daloopa's system (REQUIRED)
+        keywords (List[str], optional): List of keywords to filter the series by name (max 15, extracted from user query)
         
     Returns:
         Union[List[Dict[str, Any]], Dict[str, Any]]: On success - list of financial series, each containing:
             - id (int): The unique identifier for the series (required for get_company_fundamentals)
-            - full_series_name (str): Full hierarchical context (e.g., "Income Statement | Revenue")
+            - full_series_name (str): Full descriptive name of the financial series
         On error - dictionary containing:
             - error (str): Error message
             - company_id (int): The company ID that caused the error
-            - keywords (List[str]): The keywords that caused the error
+            - keywords (List[str] | None): The keywords that caused the error
     """
     try:
         headers = {
@@ -191,7 +196,11 @@ def discover_company_series(company_id: int, keywords: List[str]) -> Union[List[
         
         params = {"company_id": company_id}
         if keywords:
-            params["keywords"] = keywords
+            # API expects keywords as array parameters
+            for keyword in keywords:
+                if "keywords" not in params:
+                    params["keywords"] = []
+                params["keywords"].append(keyword)
         
         response = requests.get(
             f"{DALOOPA_BASE_URL}/companies/series",
@@ -217,7 +226,7 @@ def discover_company_series(company_id: int, keywords: List[str]) -> Union[List[
         }
 
 @mcp.tool
-def get_company_fundamentals(company_id: int, periods: List[str], series_ids: List[int]) -> Union[Dict[str, Any], Dict[str, Any]]:
+def get_company_fundamentals(company_id: int, periods: List[str], series_ids: List[int] = None) -> Union[Dict[str, Any], Dict[str, Any]]:
     """
     Retrieve financial fundamentals for a specific company across specified periods.
     
@@ -226,32 +235,42 @@ def get_company_fundamentals(company_id: int, periods: List[str], series_ids: Li
     Balance Sheet, Cash Flow Statement, and various financial ratios.
     
     Args:
-        company_id (int): The unique identifier for the company in Daloopa's system
-        periods (List[str]): List of periods in YYYYQQ format (e.g., ["2023Q1", "2023Q2"])
-                            For annual data, use FY (e.g., "2022FY" for full year 2022)
-        series_ids (List[int]): List of specific financial metric IDs to retrieve (from discover_company_series)
+        company_id (int): The unique identifier for the company in Daloopa's system (REQUIRED)
+        periods (List[str]): List of periods (REQUIRED). Accepted formats:
+                           - YYYYQ[1-4] for quarters (e.g., "2023Q1", "2023Q2")
+                           - YYYYH[1-2] for half-years (e.g., "2023H1")
+                           - YYYYFY for fiscal year (e.g., "2022FY")
+        series_ids (List[int], optional): List of specific financial metric IDs to retrieve (from discover_company_series)
         
     Returns:
         Union[Dict[str, Any], Dict[str, Any]]: On success - paginated API response containing:
             - count (int): Total number of matching results available
-            - next (str): URL to next page or null
-            - previous (str): URL to previous page or null
+            - next (str | None): URL to next page or null
+            - previous (str | None): URL to previous page or null
             - results (List[Dict]): List of financial datapoints, each containing:
                 - id (int): Unique datapoint identifier (fundamental_id for citations)
                 - label (str): Short description of the datapoint
                 - category (str): Financial statement section
+                - restated (bool): Whether this is a restated value
+                - filing_type (str): Type of filing (10-K, 10-Q, etc.)
+                - series_id (int): Series identifier
+                - title (str): Full hierarchical context
                 - value_raw (float): Raw financial value
                 - value_normalized (float): Normalized financial value
                 - unit (str): Unit of measurement (million, billion, etc.)
                 - calendar_period (str): Calendar period (YYYYQQ format)
                 - fiscal_period (str): Fiscal period (YYYYQQ format)
-                - series_id (int): Series identifier
-                - title (str): Full hierarchical context
+                - span (str): Time span information
+                - fiscal_date (str): Fiscal period end date (date format)
+                - filing_date (str): SEC filing date (date format)
+                - document_released_at (str): Document release timestamp (date-time format)
+                - created_at (str): Record creation timestamp (date-time format)
+                - updated_at (str): Record update timestamp (date-time format)
         On error - dictionary containing:
             - error (str): Error message
             - company_id (int): The company ID that caused the error
             - periods (List[str]): The periods that caused the error
-            - series_ids (List[int]): The series IDs that caused the error
+            - series_ids (List[int] | None): The series IDs that caused the error
             
     Usage Guidelines:
     1. Obtain series_ids from discover_company_series() before calling this function
@@ -293,6 +312,15 @@ def get_company_fundamentals(company_id: int, periods: List[str], series_ids: Li
     - Provide concise, insightful analysis rather than just raw numbers
     - Include relevant financial ratios and performance metrics
     """
+    # Validate required parameters
+    if not periods:
+        return {
+            "error": "periods parameter is required and cannot be empty",
+            "company_id": company_id,
+            "periods": periods,
+            "series_ids": series_ids
+        }
+    
     try:
         headers = {
             "Authorization": f"Basic {DALOOPA_API_KEY}",
