@@ -237,7 +237,7 @@ def get_company_fundamentals(company_id: int, periods: List[str], series_ids: Li
             - next (str): URL to next page or null
             - previous (str): URL to previous page or null
             - results (List[Dict]): List of financial datapoints, each containing:
-                - id (int): Unique datapoint identifier (fundamental_id)
+                - id (int): Unique datapoint identifier (fundamental_id for citations)
                 - label (str): Short description of the datapoint
                 - category (str): Financial statement section
                 - value_raw (float): Raw financial value
