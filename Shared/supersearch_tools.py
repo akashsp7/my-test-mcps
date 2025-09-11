@@ -188,7 +188,6 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True, 
         if matches:
             file_result = {
                 'file': file_path,
-                'filename': metadata['filename'],
                 'match_count': len(matches),
                 'estimated_tokens': metadata['estimated_tokens']
             }
@@ -196,7 +195,7 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True, 
             if with_snippets:
                 # Add snippets around matches
                 snippets = []
-                for match in matches[:5]:  # Limit to first 5 matches
+                for match in matches[:3]:  # Limit to first 5 matches
                     if regex:
                         snippet = _get_snippet_around_position(content, match['start'])
                         snippets.append({
@@ -228,51 +227,67 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True, 
     }
 
 
-def preview_file(file: str, mode: str = "lines") -> Dict[str, any]:
+def preview_file(file: str, start_line: int = 1, end_line: Optional[int] = None, safe: bool = True) -> Dict[str, any]:
     """
-    Preview file content around matches or by pages.
+    Preview specific line ranges from transcript files.
     
     Args:
         file: File path
-        mode: "lines" or "pages"
+        start_line: Starting line number (1-indexed)
+        end_line: Ending line number (inclusive). If None, goes to end of file
+        safe: If True, warns when preview exceeds 2000 characters
         
     Returns:
-        Preview content with metadata
+        Dict with preview content or warning
     """
     if file not in file_cache:
         return {"error": f"File {file} not found in cache"}
     
-    metadata = file_cache[file]
     # Read and clean content at preview time
     with open(file, 'r', encoding='utf-8') as f:
         raw_content = f.read()
     content = _clean_content(raw_content)
+    lines = content.split('\n')
+    total_lines = len(lines)
     
-    if mode == "pages":
-        # Return first few pages
-        pages = _extract_pages(content)
-        preview_pages = pages[:min(3, len(pages))]  # First 3 pages max
-        
+    # Validate line numbers
+    if start_line < 1:
+        start_line = 1
+    if start_line > total_lines:
+        return {"error": f"Start line {start_line} exceeds file length ({total_lines} lines)"}
+    
+    # Set end_line if not provided
+    if end_line is None:
+        end_line = total_lines
+    if end_line > total_lines:
+        end_line = total_lines
+    if end_line < start_line:
+        return {"error": f"End line {end_line} cannot be less than start line {start_line}"}
+    
+    # Extract requested lines (convert to 0-indexed)
+    selected_lines = lines[start_line-1:end_line]
+    preview_content = '\n'.join(selected_lines)
+    char_count = len(preview_content)
+    
+    # Guardrail check
+    if safe and char_count > 2000:
         return {
-            'file': file,
-            'mode': 'pages',
-            'total_pages': len(pages),
-            'preview_pages': len(preview_pages),
-            'content': '\n\n'.join([f"# Page {i+1}\n{page}" for i, page in enumerate(preview_pages)])
+            'preview': True,
+            'requested_lines': f"{start_line}-{end_line}",
+            'char_count': char_count,
+            'message': f'Requested lines would return {char_count} characters (>2000 limit). Try smaller ranges or use safe=False to get all requested lines.',
         }
     
-    else:  # lines mode
-        lines = content.split('\n')
-        total_lines = len(lines)
-        preview_lines = lines[:min(50, total_lines)]  # First 50 lines
-        
-        return {
-            'file': file,
-            'mode': 'lines',
-            'total_lines': total_lines,
-            'preview_lines': len(preview_lines),
-            'content': '\n'.join(preview_lines)
-        }
+    return {
+        'preview': False,
+        'file': file,
+        'requested_lines': f"{start_line}-{end_line}",
+        'total_lines': total_lines,
+        'returned_lines': len(selected_lines),
+        'char_count': char_count,
+        'estimated_tokens': char_count // 4,
+        'content': preview_content
+    }
 
 
 def segment_file(file: str) -> Dict[str, any]:
@@ -288,7 +303,6 @@ def segment_file(file: str) -> Dict[str, any]:
     if file not in file_cache:
         return {"error": f"File {file} not found in cache"}
     
-    metadata = file_cache[file]
     # Read and clean content at segment time
     with open(file, 'r', encoding='utf-8') as f:
         raw_content = f.read()
