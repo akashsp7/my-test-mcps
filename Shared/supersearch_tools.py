@@ -143,7 +143,7 @@ def search_filenames(query: str, regex: bool = False, safe: bool = True) -> Dict
     }
 
 
-def search_content(query: str, regex: bool = False, with_snippets: bool = True) -> List[Dict[str, any]]:
+def search_content(query: str, regex: bool = False, with_snippets: bool = True, safe: bool = True) -> Dict[str, any]:
     """
     Search for content within transcript files.
     
@@ -151,9 +151,10 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True) 
         query: Search query string
         regex: Whether to treat query as regex pattern
         with_snippets: Include content snippets in results
+        safe: If True, warns when results exceed 10 files
         
     Returns:
-        List of files with matching content and snippets
+        Dict with results or preview warning
     """
     results = []
     
@@ -211,7 +212,20 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True) 
             
             results.append(file_result)
     
-    return results
+    # Preview function - warn if too many results
+    res_len = len(results)
+    if safe and res_len > 10:
+        return {
+            'preview': True,
+            'count': res_len,
+            'message': f'Found {res_len} files with matching content. This exceeds the safe limit of 10. Try using specific queries or use safe=False to get all {res_len} results.',
+        }
+    
+    return {
+        'preview': False,
+        'count': res_len,
+        'results': results
+    }
 
 
 def preview_file(file: str, mode: str = "lines") -> Dict[str, any]:
