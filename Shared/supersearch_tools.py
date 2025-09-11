@@ -83,7 +83,7 @@ def sync_files(directory_path: str = "./transcripts") -> Dict[str, any]:
     
     # Save updated cache
     with open(cache_path, 'w') as f:
-        json.dump(file_cache, f)
+        json.dump(file_cache, f, indent=4)
     
     return {
         'processed': processed,
@@ -93,16 +93,17 @@ def sync_files(directory_path: str = "./transcripts") -> Dict[str, any]:
     }
 
 
-def search_filenames(query: str, regex: bool = False) -> List[Dict[str, str]]:
+def search_filenames(query: str, regex: bool = False, safe: bool = True) -> Dict[str, any]:
     """
     Search for files with matching filenames.
     
     Args:
         query: Search query string
         regex: Whether to treat query as regex pattern
+        safe: If True, warns when results exceed 10 files
         
     Returns:
-        List of matching files with metadata
+        Dict with results or preview warning
     """
     results = []
     
@@ -126,7 +127,20 @@ def search_filenames(query: str, regex: bool = False) -> List[Dict[str, str]]:
                     'pages': metadata['pages']
                 })
     
-    return results
+    # Preview function - warn if too many results
+    res_len = len(results)
+    if safe and res_len > 10:
+        return {
+            'preview': True,
+            'count': res_len,
+            'message': f'Found {res_len} matching files. This exceeds the safe limit of 10. Try using specific queries or use safe=False to get all {res_len} results.',
+        }
+    
+    return {
+        'preview': False,
+        'count': res_len,
+        'results': results
+    }
 
 
 def search_content(query: str, regex: bool = False, with_snippets: bool = True) -> List[Dict[str, any]]:
