@@ -358,7 +358,7 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
     Estimate token usage for given files/pages.
     
     Args:
-        files: List of file paths
+        files: List of file paths  
         selections: Dict mapping file paths to list of page numbers
         
     Returns:
@@ -366,7 +366,9 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
     """
     total_tokens = 0
     file_estimates = []
+    processed_files = set()
     
+    # Process files from the files list
     for file in files:
         if file not in file_cache:
             file_estimates.append({
@@ -375,6 +377,7 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
             })
             continue
         
+        processed_files.add(file)
         metadata = file_cache[file]
         
         if selections and file in selections:
@@ -397,7 +400,6 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
                 'estimated_tokens': page_tokens
             })
             total_tokens += page_tokens
-        
         else:
             # Full file estimation
             file_tokens = metadata['estimated_tokens']
@@ -406,6 +408,36 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
                 'estimated_tokens': file_tokens
             })
             total_tokens += file_tokens
+    
+    # Process additional files that are only in selections (not in files list)
+    if selections:
+        for file, selected_pages in selections.items():
+            if file not in processed_files:  # Only process files not already handled
+                if file not in file_cache:
+                    file_estimates.append({
+                        'file': file,
+                        'error': 'File not found in cache'
+                    })
+                    continue
+                
+                # Calculate tokens for selected pages
+                with open(file, 'r', encoding='utf-8') as f:
+                    raw_content = f.read()
+                content = _clean_content(raw_content)
+                pages = _extract_pages(content)
+                
+                page_tokens = 0
+                for page_num in selected_pages:
+                    if 1 <= page_num <= len(pages):
+                        page_content = pages[page_num - 1]
+                        page_tokens += len(page_content) // 4
+                
+                file_estimates.append({
+                    'file': file,
+                    'selected_pages': selected_pages,
+                    'estimated_tokens': page_tokens
+                })
+                total_tokens += page_tokens
     
     return {
         'total_estimated_tokens': total_tokens,
