@@ -290,15 +290,18 @@ def preview_file(file: str, start_line: int = 1, end_line: Optional[int] = None,
     }
 
 
-def segment_file(file: str) -> Dict[str, any]:
+def segment_file(file: str, start_page: int = 1, end_page: Optional[int] = None, max_chars: int = 500) -> Dict[str, any]:
     """
-    Return list of page sections from transcript file.
+    Return page segments from transcript file within specified range.
     
     Args:
         file: File path
+        start_page: Starting page number (1-indexed)
+        end_page: Ending page number (inclusive, None for all remaining pages)
+        max_chars: Maximum characters to show (default 500)
         
     Returns:
-        List of page segments with metadata
+        Dict with page segments and metadata
     """
     if file not in file_cache:
         return {"error": f"File {file} not found in cache"}
@@ -308,24 +311,38 @@ def segment_file(file: str) -> Dict[str, any]:
         raw_content = f.read()
     content = _clean_content(raw_content)
     pages = _extract_pages(content)
+    total_pages = len(pages)
     
-    segments = []
-    for i, page_content in enumerate(pages):
-        page_num = i + 1
-        char_count = len(page_content)
-        estimated_tokens = char_count // 4
-        
-        segments.append({
-            'page': page_num,
-            'char_count': char_count,
-            'estimated_tokens': estimated_tokens,
-            'preview': page_content[:200] + '...' if len(page_content) > 200 else page_content
-        })
+    # Validate page range
+    if start_page < 1 or start_page > total_pages:
+        return {"error": f"start_page {start_page} out of range (1-{total_pages})"}
+    
+    if end_page is None:
+        end_page = total_pages
+    elif end_page < start_page or end_page > total_pages:
+        return {"error": f"end_page {end_page} out of range ({start_page}-{total_pages})"}
+    
+    # Extract requested pages
+    selected_pages = pages[start_page-1:end_page]
+    combined_content = '\n\n'.join(selected_pages)
+    
+    # Apply character limit
+    if len(combined_content) > max_chars:
+        return {
+            'file': file,
+            'pages': f"{start_page}-{end_page}",
+            'total_pages': total_pages,
+            'estimated_tokens': len(combined_content) // 4,
+            'message': f'Requested pages would return {len(combined_content)} characters (>{max_chars} limit). Increase max_chars or use smaller page range.',
+            'content': combined_content[:max_chars] + '...'
+        }
     
     return {
         'file': file,
-        'total_pages': len(segments),
-        'segments': segments
+        'pages': f"{start_page}-{end_page}",
+        'total_pages': total_pages,
+        'estimated_tokens': len(combined_content) // 4,
+        'content': combined_content
     }
 
 
