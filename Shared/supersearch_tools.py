@@ -454,14 +454,15 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
     }
 
 
-def read_file(file: str, mode: str = "full", pages: Optional[List[int]] = None) -> Dict[str, any]:
+def read_file(file: str, page_list: Optional[List[int]] = None, start_page: Optional[int] = None, end_page: Optional[int] = None) -> Dict[str, any]:
     """
-    Read file content - full file or specific pages.
+    Read file content - full file, specific pages, or page ranges.
     
     Args:
         file: File path
-        mode: "full" or "pages"
-        pages: List of page numbers (for pages mode)
+        page_list: List of specific page numbers (e.g., [1,3,5]). If provided, ignores range parameters.
+        start_page: Starting page number for range (used only if page_list is None)
+        end_page: Ending page number for range (used only if page_list is None)
         
     Returns:
         File content with metadata
@@ -475,27 +476,8 @@ def read_file(file: str, mode: str = "full", pages: Optional[List[int]] = None) 
         raw_content = f.read()
     content = _clean_content(raw_content)
     
-    if mode == "pages" and pages:
-        page_contents = _extract_pages(content)
-        selected_content = []
-        
-        for page_num in pages:
-            if 1 <= page_num <= len(page_contents):
-                selected_content.append(f"# Page {page_num}\n{page_contents[page_num - 1]}")
-        
-        final_content = '\n\n'.join(selected_content)
-        char_count = len(final_content)
-        
-        return {
-            'file': file,
-            'mode': 'pages',
-            'selected_pages': pages,
-            'char_count': char_count,
-            'estimated_tokens': char_count // 4,
-            'content': final_content
-        }
-    
-    else:  # full mode
+    # If no page parameters provided, return full file
+    if page_list is None and start_page is None and end_page is None:
         return {
             'file': file,
             'mode': 'full',
@@ -503,6 +485,50 @@ def read_file(file: str, mode: str = "full", pages: Optional[List[int]] = None) 
             'estimated_tokens': metadata['estimated_tokens'],
             'content': content
         }
+    
+    # Extract pages
+    page_contents = _extract_pages(content)
+    total_pages = len(page_contents)
+    
+    # Determine which pages to include
+    if page_list is not None:
+        # Use page_list if provided
+        for page_num in page_list:
+            if page_num < 1 or page_num > total_pages:
+                return {"error": f"Page {page_num} out of range (1-{total_pages})"}
+        pages_to_include = sorted(page_list)
+        mode_info = f"pages {page_list}"
+    else:
+        # Use range if page_list is None
+        if start_page is None:
+            start_page = 1
+        if end_page is None:
+            end_page = total_pages
+            
+        if start_page < 1 or start_page > total_pages:
+            return {"error": f"start_page {start_page} out of range (1-{total_pages})"}
+        if end_page < start_page or end_page > total_pages:
+            return {"error": f"end_page {end_page} out of range ({start_page}-{total_pages})"}
+            
+        pages_to_include = list(range(start_page, end_page + 1))
+        mode_info = f"pages {start_page}-{end_page}"
+    
+    # Build selected content
+    selected_content = []
+    for page_num in pages_to_include:
+        selected_content.append(f"# Page {page_num}\n{page_contents[page_num - 1]}")
+    
+    final_content = '\n\n'.join(selected_content)
+    char_count = len(final_content)
+    
+    return {
+        'file': file,
+        'mode': mode_info,
+        'selected_pages': pages_to_include,
+        'char_count': char_count,
+        'estimated_tokens': char_count // 4,
+        'content': final_content
+    }
 
 
 # Helper functions
