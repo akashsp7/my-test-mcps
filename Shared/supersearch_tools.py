@@ -13,7 +13,7 @@ from typing import List, Dict, Optional
 
 
 # Global variables for caching
-CACHE_FILE = "transcript_cache.json"
+CACHE_FILE = ".supercache.json"
 file_cache = {}
 
 
