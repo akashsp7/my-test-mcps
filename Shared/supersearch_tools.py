@@ -5,12 +5,11 @@ Simple implementation for financial transcript search and analysis.
 Based on PRP: MCP Server for Financial Transcripts & Earnings Calls
 """
 
-import os
 import re
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional
 
 
 # Global variables for caching
@@ -52,33 +51,33 @@ def sync_files(directory_path: str = "./transcripts") -> Dict[str, any]:
         last_modified = datetime.fromtimestamp(file_stat.st_mtime).isoformat()
         
         # Check if file is new or modified
-        if file_path not in file_cache or file_cache[file_path]['last_modified'] != last_modified:
+        is_new = file_path not in file_cache
+        is_modified = not is_new and file_cache[file_path]['last_modified'] != last_modified
+        
+        if is_new or is_modified:
             # Read file for metadata
             with open(md_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # Clean content and estimate tokens
-            cleaned_content = _clean_content(content)
-            char_count = len(cleaned_content)
+            # Basic metadata without cleaning content
+            char_count = len(content)
             estimated_tokens = char_count // 4  # Simple approximation
             
             # Count pages
-            pages = len(re.findall(r'^# Page \d+', cleaned_content, re.MULTILINE))
+            pages = len(re.findall(r'^# Page \d+', content, re.MULTILINE))
             
             file_cache[file_path] = {
                 'filename': md_file.name,
                 'last_modified': last_modified,
                 'char_count': char_count,
                 'estimated_tokens': estimated_tokens,
-                'pages': pages,
-                'cleaned_content': cleaned_content
+                'pages': pages
             }
             
-            if file_path not in file_cache or file_cache[file_path]['last_modified'] != last_modified:
-                if file_path in file_cache:
-                    updated_files += 1
-                else:
-                    new_files += 1
+            if is_new:
+                new_files += 1
+            else:
+                updated_files += 1
         
         processed += 1
     
@@ -145,7 +144,10 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True) 
     results = []
     
     for file_path, metadata in file_cache.items():
-        content = metadata['cleaned_content']
+        # Read and clean content at search time
+        with open(file_path, 'r', encoding='utf-8') as f:
+            raw_content = f.read()
+        content = _clean_content(raw_content)
         matches = []
         
         if regex:
@@ -198,14 +200,13 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True) 
     return results
 
 
-def preview_file(file: str, mode: str = "lines", window: int = 5) -> Dict[str, any]:
+def preview_file(file: str, mode: str = "lines") -> Dict[str, any]:
     """
     Preview file content around matches or by pages.
     
     Args:
         file: File path
         mode: "lines" or "pages"
-        window: Number of lines around match (for lines mode)
         
     Returns:
         Preview content with metadata
@@ -214,7 +215,10 @@ def preview_file(file: str, mode: str = "lines", window: int = 5) -> Dict[str, a
         return {"error": f"File {file} not found in cache"}
     
     metadata = file_cache[file]
-    content = metadata['cleaned_content']
+    # Read and clean content at preview time
+    with open(file, 'r', encoding='utf-8') as f:
+        raw_content = f.read()
+    content = _clean_content(raw_content)
     
     if mode == "pages":
         # Return first few pages
@@ -257,7 +261,10 @@ def segment_file(file: str) -> Dict[str, any]:
         return {"error": f"File {file} not found in cache"}
     
     metadata = file_cache[file]
-    content = metadata['cleaned_content']
+    # Read and clean content at segment time
+    with open(file, 'r', encoding='utf-8') as f:
+        raw_content = f.read()
+    content = _clean_content(raw_content)
     pages = _extract_pages(content)
     
     segments = []
@@ -306,7 +313,10 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
         
         if selections and file in selections:
             # Calculate tokens for selected pages only
-            pages = _extract_pages(metadata['cleaned_content'])
+            with open(file, 'r', encoding='utf-8') as f:
+                raw_content = f.read()
+            content = _clean_content(raw_content)
+            pages = _extract_pages(content)
             selected_pages = selections[file]
             
             page_tokens = 0
@@ -354,7 +364,10 @@ def read_file(file: str, mode: str = "full", pages: Optional[List[int]] = None) 
         return {"error": f"File {file} not found in cache"}
     
     metadata = file_cache[file]
-    content = metadata['cleaned_content']
+    # Read and clean content at read time
+    with open(file, 'r', encoding='utf-8') as f:
+        raw_content = f.read()
+    content = _clean_content(raw_content)
     
     if mode == "pages" and pages:
         page_contents = _extract_pages(content)
@@ -389,7 +402,7 @@ def read_file(file: str, mode: str = "full", pages: Optional[List[int]] = None) 
 # Helper functions
 
 def _clean_content(content: str) -> str:
-    """Clean and normalize transcript content."""
+    """Clean and normalize transcript content for LLM consumption."""
     # Normalize whitespace
     content = re.sub(r'\r\n', '\n', content)
     content = re.sub(r'\r', '\n', content)
@@ -403,16 +416,6 @@ def _clean_content(content: str) -> str:
     # Collapse repeated punctuation
     content = re.sub(r'\.{4,}', '…', content)
     content = re.sub(r'-{3,}', '---', content)
-    
-    # Remove common boilerplate patterns
-    boilerplate_patterns = [
-        r'Confidential.*?\n',
-        r'Page \d+ of \d+.*?\n',
-        r'© \d{4}.*?\n'
-    ]
-    
-    for pattern in boilerplate_patterns:
-        content = re.sub(pattern, '', content, flags=re.IGNORECASE)
     
     return content.strip()
 
