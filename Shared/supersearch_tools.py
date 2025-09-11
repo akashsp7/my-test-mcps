@@ -290,13 +290,15 @@ def preview_file(file: str, start_line: int = 1, end_line: Optional[int] = None,
     }
 
 
-def segment_file(file: str, page_list: Optional[List[int]] = None, max_chars: int = 500) -> Dict[str, any]:
+def segment_file(file: str, page_list: Optional[List[int]] = None, start_page: int = 1, end_page: int = 2, max_chars: int = 500) -> Dict[str, any]:
     """
     Return page segments from transcript file for specified pages.
     
     Args:
         file: File path
-        page_list: List of specific page numbers to retrieve (e.g., [1,2,5,6]). If None, returns all pages.
+        page_list: List of specific page numbers to retrieve (e.g., [1,2,5,6]). If provided, ignores range parameters.
+        start_page: Starting page number for range (default 1, used only if page_list is None)
+        end_page: Ending page number for range (default 2, used only if page_list is None)
         max_chars: Maximum characters to show per page (default 500)
         
     Returns:
@@ -313,14 +315,19 @@ def segment_file(file: str, page_list: Optional[List[int]] = None, max_chars: in
     total_pages = len(pages)
     
     # Determine which pages to include
-    if page_list is None:
-        pages_to_include = list(range(1, total_pages + 1))
-    else:
-        # Validate page numbers
+    if page_list is not None:
+        # Use page_list if provided
         for page_num in page_list:
             if page_num < 1 or page_num > total_pages:
                 return {"error": f"Page {page_num} out of range (1-{total_pages})"}
         pages_to_include = sorted(page_list)
+    else:
+        # Use range if page_list is None
+        if start_page < 1 or start_page > total_pages:
+            return {"error": f"start_page {start_page} out of range (1-{total_pages})"}
+        if end_page < start_page or end_page > total_pages:
+            return {"error": f"end_page {end_page} out of range ({start_page}-{total_pages})"}
+        pages_to_include = list(range(start_page, end_page + 1))
     
     segments = []
     for page_num in pages_to_include:
