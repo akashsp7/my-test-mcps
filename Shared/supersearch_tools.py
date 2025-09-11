@@ -143,12 +143,13 @@ def search_filenames(query: str, regex: bool = False, safe: bool = True) -> Dict
     }
 
 
-def search_content(query: str, regex: bool = False, with_snippets: bool = True, safe: bool = True) -> Dict[str, any]:
+def search_content(query: str, files: Optional[List[str]] = None, regex: bool = False, with_snippets: bool = True, safe: bool = True) -> Dict[str, any]:
     """
     Search for content within transcript files.
     
     Args:
         query: Search query string
+        files: List of specific files to search (if None, searches all cached files)
         regex: Whether to treat query as regex pattern
         with_snippets: Include content snippets in results
         safe: If True, warns when results exceed 10 files
@@ -158,7 +159,14 @@ def search_content(query: str, regex: bool = False, with_snippets: bool = True, 
     """
     results = []
     
-    for file_path, metadata in file_cache.items():
+    # Determine which files to search
+    if files is None:
+        files_to_search = file_cache.items()
+    else:
+        # Filter to only requested files that are in cache
+        files_to_search = [(f, file_cache[f]) for f in files if f in file_cache]
+    
+    for file_path, metadata in files_to_search:
         # Read and clean content at search time
         with open(file_path, 'r', encoding='utf-8') as f:
             raw_content = f.read()
@@ -442,7 +450,7 @@ def estimate_tokens(files: List[str], selections: Optional[Dict[str, List[int]]]
     return {
         'total_estimated_tokens': total_tokens,
         'files': file_estimates,
-        'warning': 'Over 50k tokens' if total_tokens > 50000 else None
+        'warning': 'Over 100k tokens' if total_tokens > 100000 else None
     }
 
 
