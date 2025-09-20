@@ -1,6 +1,5 @@
 """Minimal HTTP client for Obsidian Local REST API."""
-import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import httpx
 from config import ObsidianConfig
 

@@ -1,0 +1,32 @@
+# Obsidian Multi-Vault Configuration
+# Configure multiple Obsidian vaults with different API keys and ports
+
+vaults:
+  personal:
+    name: "Code Knowledge"
+    api_key: "5cac94b31b6009861d91ee29af13f87894fc61b2f55b3bc5b0579dd365f66096"
+    host: "127.0.0.1"
+    port: 27124
+    protocol: "https"
+    verify_ssl: false
+    timeout: 10
+
+  work:
+    name: "Verition"
+    api_key: "022f4e95769f605d0fd07123eca27f60d2177750f61f412fddf0139f0d3833cd"
+    host: "127.0.0.1"
+    port: 27125
+    protocol: "https"
+    verify_ssl: false
+    timeout: 10
+
+# Optional: Set default vault (if not specified, first vault is used)
+default_vault: "personal"
+# Setup Instructions:
+# 1. Replace the API keys above with your actual Local REST API plugin keys
+# 2. Configure each vault's Local REST API plugin to use different ports:
+#    - Personal vault: port 27124
+#    - Work vault: port 27125
+# (NOTE: 27124 is default, for other vaults, open the actual folder, go to `.obsidian/plugins/obsidian-local-rest-api/data.json` and change port)
+# 3. Make sure all required Obsidian instances are running with their respective vaults
+# 4. Test with: list_vaults() tool to verify configuration
