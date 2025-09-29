@@ -14,7 +14,7 @@ logging.getLogger("edgar").setLevel(logging.WARNING)
 
 # Set default user agent if not provided
 if not os.getenv("SEC_EDGAR_USER_AGENT"):
-    os.environ["SEC_EDGAR_USER_AGENT"] = "Akash Pawar akashpawar9619@gmail.com"
+    os.environ["SEC_EDGAR_USER_AGENT"] = "FirstName LastName blahblah@blah.com"
 
 DETERMINISTIC_INSTRUCTIONS = """
 CRITICAL: When responding to SEC filing data requests, you MUST follow these rules:
