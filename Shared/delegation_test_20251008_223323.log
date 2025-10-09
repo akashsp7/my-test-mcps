@@ -1,0 +1,199 @@
+2025-10-08 22:33:23,973 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:23,973 - __main__ - INFO - AGENT DELEGATION COMPARISON TEST
+2025-10-08 22:33:23,973 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:23,973 - __main__ - INFO - Test Query: Get market data for Tesla (TSLA) for the last month
+2025-10-08 22:33:23,973 - __main__ - INFO - Log File: delegation_test_20251008_223323.log
+2025-10-08 22:33:23,973 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:23,973 - __main__ - INFO - 
+2025-10-08 22:33:24,755 - __main__ - INFO - 
+====================================================================================================
+2025-10-08 22:33:24,755 - __main__ - INFO - TEST 1: CLAUDE SONNET 4
+2025-10-08 22:33:24,755 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:24,755 - __main__ - INFO - Creating Claude agent...
+2025-10-08 22:33:24,819 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:24,819 - __main__ - INFO - DELEGATION TEST - Claude Sonnet 4
+2025-10-08 22:33:24,819 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:24,819 - __main__ - INFO - Test Query: Get market data for Tesla (TSLA) for the last month
+2025-10-08 22:33:24,819 - __main__ - INFO - 
+2025-10-08 22:33:24,819 - __main__ - INFO - Invoking agent...
+2025-10-08 22:33:28,689 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-10-08 22:33:31,160 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-10-08 22:33:35,725 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-10-08 22:33:35,730 - __main__ - INFO - 
+2025-10-08 22:33:35,730 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:35,730 - __main__ - INFO - RESULT - Claude Sonnet 4
+2025-10-08 22:33:35,730 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:35,730 - __main__ - INFO - Message 1 (human):
+2025-10-08 22:33:35,730 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:35,730 - __main__ - INFO -   Content: Get market data for Tesla (TSLA) for the last month...
+2025-10-08 22:33:35,731 - __main__ - INFO - 
+2025-10-08 22:33:35,731 - __main__ - INFO - Message 2 (ai):
+2025-10-08 22:33:35,731 - __main__ - INFO -   Content type: <class 'list'>
+2025-10-08 22:33:35,731 - __main__ - INFO -   Content: [{'text': "I'll get the market data for Tesla (TSLA) for the last month by delegating this task to our market-data-analyst subagent.", 'type': 'text'}, {'id': 'toolu_01ANjw1wBWL6w7gYNKDppb4w', 'input': {'description': 'Get market data for Tesla (TSLA) for the last month. Please retrieve and analyze the stock price data, trading volume, and any relevant trading metrics for Tesla over the past month period.', 'subagent_type': 'market-data-analyst'}, 'name': 'task', 'type': 'tool_use'}]...
+2025-10-08 22:33:35,731 - __main__ - INFO - 
+2025-10-08 22:33:35,731 - __main__ - INFO - Message 3 (tool):
+2025-10-08 22:33:35,731 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:35,731 - __main__ - INFO -   Content: Error: NotImplementedError('StructuredTool does not support sync invocation.')
+ Please fix your mistakes....
+2025-10-08 22:33:35,731 - __main__ - INFO - 
+2025-10-08 22:33:35,731 - __main__ - INFO - Message 4 (ai):
+2025-10-08 22:33:35,731 - __main__ - INFO -   Content type: <class 'list'>
+2025-10-08 22:33:35,732 - __main__ - INFO -   Content: [{'text': 'Let me try a different approach to get the Tesla market data:', 'type': 'text'}, {'id': 'toolu_01Ya9uWcmM9HVD71UkgDEHAC', 'input': {'ticker': 'TSLA', 'period': '1mo'}, 'name': 'placeholder_market_data', 'type': 'tool_use'}]...
+2025-10-08 22:33:35,732 - __main__ - INFO - 
+2025-10-08 22:33:35,732 - __main__ - INFO - Message 5 (tool):
+2025-10-08 22:33:35,732 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:35,732 - __main__ - INFO -   Content: {"ticker": "TSLA", "period": "1mo", "status": "placeholder"}...
+2025-10-08 22:33:35,732 - __main__ - INFO - 
+2025-10-08 22:33:35,732 - __main__ - INFO - Message 6 (ai):
+2025-10-08 22:33:35,732 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:35,732 - __main__ - INFO -   Content: I've retrieved the market data request for Tesla (TSLA) over the last month. However, this appears to be a placeholder response indicating that the actual market data functionality is not fully implemented in this environment.
+
+In a real financial research system, this would typically return:
+- Opening and closing prices for each trading day
+- Daily high and low prices
+- Trading volume
+- Price changes and percentage changes
+- Moving averages
+- Other technical indicators
+
+To get actual Tesla market data, you would need access to a real financial data provider like Yahoo Finance, Bloomberg API, or similar services. Would you like me to help you with any other financial research tasks or analysis?...
+2025-10-08 22:33:35,732 - __main__ - INFO - 
+2025-10-08 22:33:35,732 - __main__ - INFO - 🤖 SUBAGENT CALL DETECTED: task
+2025-10-08 22:33:35,732 - __main__ - INFO - 
+2025-10-08 22:33:35,732 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:35,732 - __main__ - INFO - ANALYSIS SUMMARY - Claude Sonnet 4
+2025-10-08 22:33:35,732 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:35,732 - __main__ - INFO - Total tool calls: 0
+2025-10-08 22:33:35,732 - __main__ - INFO - Total subagent calls: 1
+2025-10-08 22:33:35,732 - __main__ - INFO - 
+Subagent delegations:
+2025-10-08 22:33:35,732 - __main__ - INFO -   - task
+2025-10-08 22:33:35,732 - __main__ - INFO - ✅ SUCCESS (Claude Sonnet 4): Agent properly delegated to subagents!
+2025-10-08 22:33:35,733 - __main__ - INFO - 
+====================================================================================================
+2025-10-08 22:33:35,733 - __main__ - INFO - TEST 2: GPT-4o
+2025-10-08 22:33:35,733 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:35,733 - __main__ - INFO - Creating GPT-4o agent...
+2025-10-08 22:33:35,963 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:35,963 - __main__ - INFO - DELEGATION TEST - GPT-4o
+2025-10-08 22:33:35,963 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:35,963 - __main__ - INFO - Test Query: Get market data for Tesla (TSLA) for the last month
+2025-10-08 22:33:35,963 - __main__ - INFO - 
+2025-10-08 22:33:35,963 - __main__ - INFO - Invoking agent...
+2025-10-08 22:33:37,123 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-08 22:33:37,905 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-08 22:33:39,729 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-08 22:33:42,170 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-08 22:33:42,174 - __main__ - INFO - 
+2025-10-08 22:33:42,174 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:42,174 - __main__ - INFO - RESULT - GPT-4o
+2025-10-08 22:33:42,175 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:42,175 - __main__ - INFO - Message 1 (human):
+2025-10-08 22:33:42,175 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,175 - __main__ - INFO -   Content: Get market data for Tesla (TSLA) for the last month...
+2025-10-08 22:33:42,175 - __main__ - INFO - 
+2025-10-08 22:33:42,175 - __main__ - INFO - Message 2 (ai):
+2025-10-08 22:33:42,175 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,175 - __main__ - INFO -   Content: (empty)...
+2025-10-08 22:33:42,175 - __main__ - INFO -   Additional kwargs keys: ['tool_calls', 'refusal']
+2025-10-08 22:33:42,175 - __main__ - INFO - 
+2025-10-08 22:33:42,176 - __main__ - INFO - Message 3 (tool):
+2025-10-08 22:33:42,176 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,176 - __main__ - INFO -   Content: Updated todo list to [{'content': 'Get market data for Tesla (TSLA) for the last month', 'status': 'in_progress'}]...
+2025-10-08 22:33:42,176 - __main__ - INFO - 
+2025-10-08 22:33:42,176 - __main__ - INFO - Message 4 (ai):
+2025-10-08 22:33:42,176 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,176 - __main__ - INFO -   Content: (empty)...
+2025-10-08 22:33:42,176 - __main__ - INFO -   Additional kwargs keys: ['tool_calls', 'refusal']
+2025-10-08 22:33:42,176 - __main__ - INFO - 
+2025-10-08 22:33:42,176 - __main__ - INFO - Message 5 (tool):
+2025-10-08 22:33:42,176 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,177 - __main__ - INFO -   Content: Error: NotImplementedError('StructuredTool does not support sync invocation.')
+ Please fix your mistakes....
+2025-10-08 22:33:42,177 - __main__ - INFO - 
+2025-10-08 22:33:42,177 - __main__ - INFO - Message 6 (ai):
+2025-10-08 22:33:42,177 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,177 - __main__ - INFO -   Content: It seems there was an issue with the task execution. Let me try another approach to get the market data for Tesla (TSLA) for the last month....
+2025-10-08 22:33:42,177 - __main__ - INFO -   Additional kwargs keys: ['tool_calls', 'refusal']
+2025-10-08 22:33:42,177 - __main__ - INFO - 
+2025-10-08 22:33:42,177 - __main__ - INFO - Message 7 (tool):
+2025-10-08 22:33:42,177 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,177 - __main__ - INFO -   Content: {"ticker": "TSLA", "period": "1mo", "status": "placeholder"}...
+2025-10-08 22:33:42,177 - __main__ - INFO - 
+2025-10-08 22:33:42,178 - __main__ - INFO - Message 8 (ai):
+2025-10-08 22:33:42,178 - __main__ - INFO -   Content type: <class 'str'>
+2025-10-08 22:33:42,178 - __main__ - INFO -   Content: It seems that the market data retrieval is currently a placeholder and not implemented. Unfortunately, I cannot fetch the real-time market data for Tesla (TSLA) at this moment. You might want to check a financial website or service like Yahoo Finance or Bloomberg for the latest market data. If there's anything else I can assist you with, please let me know!...
+2025-10-08 22:33:42,178 - __main__ - INFO -   Additional kwargs keys: ['refusal']
+2025-10-08 22:33:42,178 - __main__ - INFO - 
+2025-10-08 22:33:42,178 - __main__ - INFO - 
+📋 Message 2 TOOL CALLS (full structure):
+2025-10-08 22:33:42,178 - __main__ - INFO - [
+  {
+    "id": "call_6L628In2J1FtN42qARnyFb22",
+    "function": {
+      "arguments": "{\"todos\":[{\"content\":\"Get market data for Tesla (TSLA) for the last month\",\"status\":\"in_progress\"}]}",
+      "name": "write_todos"
+    },
+    "type": "function"
+  }
+]
+2025-10-08 22:33:42,178 - __main__ - INFO - 🔧 TOOL CALL DETECTED: write_todos
+2025-10-08 22:33:42,178 - __main__ - INFO - 
+📋 Message 4 TOOL CALLS (full structure):
+2025-10-08 22:33:42,178 - __main__ - INFO - [
+  {
+    "id": "call_QgicukBQ7C3OfxzQoEMLVU4s",
+    "function": {
+      "arguments": "{\"description\":\"Get market data for Tesla (TSLA) for the last month\",\"subagent_type\":\"market-data-analyst\"}",
+      "name": "task"
+    },
+    "type": "function"
+  }
+]
+2025-10-08 22:33:42,178 - __main__ - INFO - 🔧 TOOL CALL DETECTED: task
+2025-10-08 22:33:42,178 - __main__ - INFO -    Task args: {
+    "description": "Get market data for Tesla (TSLA) for the last month",
+    "subagent_type": "market-data-analyst"
+}
+2025-10-08 22:33:42,179 - __main__ - INFO -    ✅ Has subagent_type: market-data-analyst
+2025-10-08 22:33:42,179 - __main__ - INFO - 🤖 SUBAGENT CALL DETECTED: task
+2025-10-08 22:33:42,179 - __main__ - INFO - 
+📋 Message 6 TOOL CALLS (full structure):
+2025-10-08 22:33:42,179 - __main__ - INFO - [
+  {
+    "id": "call_JgzqxacoXcX2BM1aWLoGwRsb",
+    "function": {
+      "arguments": "{\"ticker\":\"TSLA\",\"period\":\"1mo\"}",
+      "name": "placeholder_market_data"
+    },
+    "type": "function"
+  }
+]
+2025-10-08 22:33:42,179 - __main__ - INFO - 🔧 TOOL CALL DETECTED: placeholder_market_data
+2025-10-08 22:33:42,179 - __main__ - INFO - 
+2025-10-08 22:33:42,179 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:42,179 - __main__ - INFO - ANALYSIS SUMMARY - GPT-4o
+2025-10-08 22:33:42,179 - __main__ - INFO - ================================================================================
+2025-10-08 22:33:42,179 - __main__ - INFO - Total tool calls: 3
+2025-10-08 22:33:42,179 - __main__ - INFO - Total subagent calls: 1
+2025-10-08 22:33:42,179 - __main__ - INFO - 
+Direct tool calls:
+2025-10-08 22:33:42,179 - __main__ - INFO -   - write_todos
+2025-10-08 22:33:42,179 - __main__ - INFO -   - task
+2025-10-08 22:33:42,179 - __main__ - INFO -   - placeholder_market_data
+2025-10-08 22:33:42,179 - __main__ - INFO - 
+Subagent delegations:
+2025-10-08 22:33:42,179 - __main__ - INFO -   - task
+2025-10-08 22:33:42,180 - __main__ - INFO - ✅ SUCCESS (GPT-4o): Agent properly delegated to subagents!
+2025-10-08 22:33:42,180 - __main__ - INFO - 
+
+====================================================================================================
+2025-10-08 22:33:42,180 - __main__ - INFO - FINAL COMPARISON
+2025-10-08 22:33:42,180 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:42,180 - __main__ - INFO - Claude Sonnet 4: DELEGATED
+2025-10-08 22:33:42,180 - __main__ - INFO - GPT-4o:          DELEGATED
+2025-10-08 22:33:42,180 - __main__ - INFO - 
+2025-10-08 22:33:42,180 - __main__ - INFO - ✅ Both models behave the same way
+2025-10-08 22:33:42,180 - __main__ - INFO - ====================================================================================================
+2025-10-08 22:33:42,180 - __main__ - INFO - Full logs saved to: delegation_test_20251008_223323.log
+2025-10-08 22:33:42,180 - __main__ - INFO - ====================================================================================================
